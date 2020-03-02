@@ -68,13 +68,7 @@ GameManager.prototype.addStartTiles = function () {
 // Adds a tile in a random position
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
-	var r = Math.random();
-    var value = [1,0,0];
-	if (r > (2.0/3.0)){
-		value = [0,1,0];
-	} else if (r > (1.0/3.0)) {
-		value = [0,0,1];
-	}
+    var value = [Math.random(), Math.random(), Math.random()];
     var tile = new Tile(this.grid.randomAvailableCell(), value);
 
     this.grid.insertTile(tile);
@@ -132,8 +126,52 @@ GameManager.prototype.moveTile = function (tile, cell) {
   tile.updatePosition(cell);
 };
 
+GameManager.prototype.getHue = function(color) {
+	var red = color[0];
+	var green = color[1];
+	var blue = color[2];
+
+    var min = Math.min(Math.min(red, green), blue);
+    var max = Math.max(Math.max(red, green), blue);
+
+    if (min == max) {
+        return 0;
+    }
+
+    var hue = 0.0;
+    if (max == red) {
+        hue = (green - blue) / (max - min);
+
+    } else if (max == green) {
+        hue = 2.0 + (blue - red) / (max - min);
+
+    } else {
+        hue = 4.0 + (red - green) / (max - min);
+    }
+
+    hue = hue * 60;
+    if (hue < 0) hue = hue + 360;
+
+    return Math.round(hue);
+};
+
+GameManager.prototype.validMatch = function(val1,val2){
+	var rmean = (val1[0] + val2[0]) / 2.0;
+	var d0 = val1[0]-val2[0];
+	var d1 = val1[1]-val2[1];
+	var d2 = val1[2]-val2[2];
+	var d = Math.sqrt((((512+rmean)*d0*d0)/256) + 4*d1*d1 + (((767-rmean)*d2*d2)/256));
+	console.log(d)
+  if (d < 1.25) {
+	  return true;
+  } else {
+	  return false;
+  }
+};
+
 GameManager.prototype.mergeValues = function(val1,val2){
-  return [(val1[0]+val2[0])/2.0, (val1[1]+val2[1])/2.0, (val1[2]+val2[2])/2.0];
+  //return [(val1[0]+val2[0])/2.0, (val1[1]+val2[1])/2.0, (val1[2]+val2[2])/2.0];
+  return [Math.min(val1[0], val2[0]), Math.min(val1[1], val2[1]), Math.min(val1[2], val2[2])]
 }
 
 // Move tiles on the grid in the specified direction
@@ -163,7 +201,7 @@ GameManager.prototype.move = function (direction) {
         var next      = self.grid.cellContent(positions.next);
 
         // Only one merger per row traversal?
-        if (next && !next.mergedFrom) {
+        if (next && self.validMatch(next.value, tile.value) && !next.mergedFrom) {
           var merged = new Tile(positions.next, self.mergeValues(next.value,tile.value));
           merged.mergedFrom = [tile, next];
 
@@ -263,7 +301,7 @@ GameManager.prototype.tileMatchesAvailable = function () {
 
           var other  = self.grid.cellContent(cell);
 
-          if (other) {
+          if (other && self.validMatch(other.value, tile.value)) {
             return true; // These two tiles can be merged
           }
         }

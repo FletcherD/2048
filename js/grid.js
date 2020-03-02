@@ -74,7 +74,7 @@ Grid.prototype.cellAvailable = function (cell) {
 };
 
 Grid.prototype.cellOccupied = function (cell) {
-  return !!this.cellContent(cell);
+  return this.cellContent(cell) !== null;
 };
 
 Grid.prototype.cellContent = function (cell) {
