@@ -68,7 +68,13 @@ GameManager.prototype.addStartTiles = function () {
 // Adds a tile in a random position
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
-    var value = Math.random() < 0.9 ? 2 : 4;
+	var r = Math.random();
+    var value = [1,0,0];
+	if (r > (2.0/3.0)){
+		value = [0,1,0];
+	} else if (r > (1.0/3.0)) {
+		value = [0,0,1];
+	}
     var tile = new Tile(this.grid.randomAvailableCell(), value);
 
     this.grid.insertTile(tile);
@@ -126,6 +132,10 @@ GameManager.prototype.moveTile = function (tile, cell) {
   tile.updatePosition(cell);
 };
 
+GameManager.prototype.mergeValues = function(val1,val2){
+  return [(val1[0]+val2[0])/2.0, (val1[1]+val2[1])/2.0, (val1[2]+val2[2])/2.0];
+}
+
 // Move tiles on the grid in the specified direction
 GameManager.prototype.move = function (direction) {
   // 0: up, 1: right, 2: down, 3: left
@@ -153,8 +163,8 @@ GameManager.prototype.move = function (direction) {
         var next      = self.grid.cellContent(positions.next);
 
         // Only one merger per row traversal?
-        if (next && next.value === tile.value && !next.mergedFrom) {
-          var merged = new Tile(positions.next, tile.value * 2);
+        if (next && !next.mergedFrom) {
+          var merged = new Tile(positions.next, self.mergeValues(next.value,tile.value));
           merged.mergedFrom = [tile, next];
 
           self.grid.insertTile(merged);
@@ -164,10 +174,7 @@ GameManager.prototype.move = function (direction) {
           tile.updatePosition(positions.next);
 
           // Update the score
-          self.score += merged.value;
-
-          // The mighty 2048 tile
-          if (merged.value === 2048) self.won = true;
+          self.score += 1;
         } else {
           self.moveTile(tile, positions.farthest);
         }
@@ -256,7 +263,7 @@ GameManager.prototype.tileMatchesAvailable = function () {
 
           var other  = self.grid.cellContent(cell);
 
-          if (other && other.value === tile.value) {
+          if (other) {
             return true; // These two tiles can be merged
           }
         }
